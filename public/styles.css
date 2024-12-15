@@ -1,0 +1,258 @@
+/* General Styles */
+body {
+    display: flex;
+    flex-direction: column;
+    background-color: var(--bg-color);
+    margin: 0;
+    padding: 0;
+    font-family: Arial, Helvetica, sans-serif;
+    color: var(--text-color);
+}
+
+header {
+    background-color: var(--header-bg);
+    color: var(--header-text);
+    padding: 10px;
+    text-align: center;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.header-logo {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    margin-right: 10px;
+}
+
+main {
+    display: flex;
+    flex: 1;
+    gap: 20px;
+    padding: 20px;
+    flex-wrap: wrap;
+}
+
+#toolbar {
+    flex: 0 0 200px;
+    overflow-x: auto;
+    display: flex;
+    flex-direction:row;
+    flex-wrap: wrap;
+    gap: 10px;
+    white-space: nowrap;
+}
+#toolbar button {
+    flex: 1 0 45%; /* Adjusts button sizes for small screens */
+}
+button:focus {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+}
+
+#canvas-container {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: 2px solid var(--canvas-border);
+    background-color: white;
+}
+
+#chat-container {
+    flex: 0 0 300px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+#messages {
+    list-style: none;
+    padding: 10px;
+    border: 1px solid var(--chat-border);
+    flex: 1;
+    overflow-y: auto;
+    background-color: var(--chat-bg);
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-color);
+}
+
+#messages::-webkit-scrollbar {
+    width: 8px;
+}
+
+#messages::-webkit-scrollbar-thumb {
+    background-color: var(--scrollbar-color);
+    border-radius: 5px;
+}
+
+#messages::-webkit-scrollbar-track {
+    background: #f0f0f0;
+}
+
+#chat-input {
+    display: flex;
+    gap: 5px;
+}
+
+button, input, select {
+    padding: 5px;
+    border-radius: 5px;
+    border: 1px solid var(--button-border);
+    background-color: var(--button-bg);
+    color: var(--button-text);
+    transition: background-color 0.3s, color 0.3s;
+    
+}
+button:hover {
+    background-color: var(--header-bg);
+    color: var(--header-text);
+    cursor: pointer;
+}
+
+.dark-theme button:hover {
+    background-color: #444;
+    color: #fff;
+}
+
+canvas {
+    display: block;
+    border: 2px solid var(--canvas-border);
+    border-radius: 8px;
+    max-width: 100%;
+    max-height: 100%;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    aspect-ratio: 16/9;
+}
+
+/* Dark Theme Variables */
+:root {
+    --bg-color: #f0f0f0;
+    --text-color: #333;
+    --header-bg: #0078d7;
+    --header-text: #fff;
+    --canvas-border: #333;
+    --chat-bg: #fff;
+    --chat-border: #ccc;
+    --button-bg: #0078d7;
+    --button-text: #fff;
+    --button-border: #005bb5;
+    --scrollbar-color: #0078d7;
+    --background-color: #bbd2e5;
+}
+
+.dark-theme {
+    --bg-color: #181818;
+    --text-color: #fff;
+    --header-bg: #333;
+    --header-text: #f0f0f0;
+    --canvas-border: #555;
+    --chat-bg: #333;
+    --chat-border: #555;
+    --button-bg: #555;
+    --button-text: #f0f0f0;
+    --button-border: #444;
+    --scrollbar-color: #0078d7;
+    --background-color: #0078d7;
+}
+
+:root, .dark-theme {
+    transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Chat and Message Styles */
+#messages li {
+    margin: 5px 0;
+    padding: 5px 10px;
+    border-radius: 8px;
+    max-width: 60%;
+}
+
+#messages li.sender {
+    align-self: flex-end;
+    background-color: #d4f8e8;
+    color: #333;
+    text-align: right;
+}
+
+#messages li.receiver {
+    align-self: flex-start;
+    background-color: #f1f1f1;
+    color: #333;
+    text-align: left;
+}
+
+#messages li span.username {
+    font-weight: bold;
+    margin-right: 5px;
+}
+
+#message {
+    width: 80%;
+    padding: 10px;
+}
+#online-count {
+    font-size: 14px;
+    margin-top: 10px;
+    color: var(--text-color);
+}
+#send {
+    padding: 10px 20px;
+    margin-left: 10px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    header {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    main {
+        flex-direction: column;
+        gap: 10px;
+        align-items: center;
+    }
+
+    #toolbar {
+        flex: 0 0 auto;
+        width: 100%;
+        max-width: 100%;
+    }
+
+    #chat-container {
+        flex: 0 0 auto;
+        width: 100%;
+        max-width: 100%;
+    }
+
+    #canvas-container {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    #messages {
+        max-height: 250px;
+    }
+}
+
+@media (max-width: 480px) {
+    .header-logo {
+        width: 30px;
+        height: 30px;
+    }
+
+    button, input, select {
+        font-size: 14px;
+        padding: 3px;
+    }
+
+    #messages {
+        max-height: 200px;
+    }
+}
+:root, .dark-theme {
+    transition: background-color 0.3s, color 0.3s;
+}

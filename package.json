@@ -1,0 +1,20 @@
+{
+  "name": "inscribe",
+  "version": "1.0.0",
+  "description": "Inscribe is an intuitive and engaging web application that allows users to create and share drawings in real-time with others. Whether you're brainstorming ideas, working on a shared project, or simply doodling for fun, Inscribe lets you draw, chat, and collaborate seamlessly.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "inscribe"
+  ],
+  "author": "keshabkjha",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.4.1",
+    "socket.io": "^4.8.1"
+  }
+}
