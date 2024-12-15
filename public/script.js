@@ -54,12 +54,22 @@ modeToggle.addEventListener('click', () => {
     ctx.strokeStyle = erasing ? '#FFFFFF' : color;
     modeToggle.textContent = erasing ? 'Switch to Drawing' : 'Switch to Erasing';
 });
+colorPicker.addEventListener('input', (e) => {
+    color = e.target.value;
+    if (!erasing) {
+        ctx.strokeStyle = color; 
+    }
+});
+
 let lastX = 0, lastY = 0;
 function startDrawing(e) {
     drawing = true;
     const rect = canvas.getBoundingClientRect();
-    startX = e.clientX - rect.left;
-    startY = e.clientY - rect.top;
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+
+    startX = (e.clientX - rect.left) * scaleX;
+    startY = (e.clientY - rect.top) * scaleY;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
     ctx.beginPath();
@@ -68,16 +78,20 @@ function startDrawing(e) {
     }
 }
 function endDrawing() {
+    if (!drawing) return;
     drawing = false;
     saveCanvasState();
     ctx.closePath();
     undoneHistory = [];
+    socket.emit('drawing', { x: null, y: null, color: null, size: null, start: true });
 }
 function draw(e) {
     if (!drawing) return;
     const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const x = (e.clientX - rect.left)*scaleX;
+    const y = (e.clientY - rect.top)*scaleY;
     ctx.lineWidth = brushSize; 
     ctx.strokeStyle = erasing ? '#FFFFFF' : color; 
     if (erasing) {
@@ -91,7 +105,7 @@ function draw(e) {
         ctx.beginPath(); 
         ctx.moveTo(x, y); 
     } 
-    socket.emit('drawing', { x, y, color: ctx.strokeStyle, size: ctx.lineWidth, tool });
+    socket.emit('drawing', { x, y, color: ctx.strokeStyle, size: ctx.lineWidth, tool, start: false});
 }
 canvas.addEventListener('mouseup', () => {
     ctx.globalCompositeOperation = 'source-over';
@@ -241,8 +255,11 @@ function downloadCanvasImage() {
     link.click();
 }
 function resizeCanvasToFit() {
+    const savedImage = canvas.toDataURL();
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
+    restoreSavedImage(savedImage);
+    ctx.beginPath(); 
     applyBackgroundStyle();
 }
 resizeCanvasToFit();
@@ -254,13 +271,22 @@ function sendMessage() {
         messageInput.value = '';
     }
 }
-socket.on('drawing', ({ x, y, color, size }) => {
+socket.on('drawing', ({ x, y, color, size, start }) => {
     ctx.lineWidth = size;
     ctx.strokeStyle = color;
-    ctx.lineTo(x, y);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(x, y);
+    if (start) {
+        ctx.beginPath();
+        if (x !== null && y !== null) {
+            ctx.moveTo(x, y); // Move to the start position
+        }
+    } else {
+        if (x !== null && y !== null) {
+            ctx.lineTo(x, y);
+            ctx.stroke();
+            ctx.beginPath(); // Prepare for the next segment
+            ctx.moveTo(x, y);
+        }
+    }
 });
 let username = prompt("Enter your name:", "Guest");
 if (!username || username.trim() === "Guest") {
