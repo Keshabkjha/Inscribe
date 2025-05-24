@@ -138,22 +138,49 @@ app.use('/api/', apiLimiter);
 
 // Error handling middleware
 app.use((err, req, res, _next) => {
-  console.error(err.stack);
+  logger.error('Server error:', { 
+    error: err.message,
+    stack: process.env.NODE_ENV !== 'production' ? err.stack : undefined,
+    path: req.path,
+    method: req.method
+  });
   res.status(500).json({ error: 'Something went wrong!' });
 });
 
-// Input validation middleware
-const validateInput = (req, res, next) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    logger.warn('Validation failed', { errors: errors.array() });
-    return res.status(400).json({ 
-      success: false,
-      errors: errors.array() 
-    });
-  }
-  next();
+// Validation schemas for route handlers
+const validationSchemas = {
+  chatMessage: [
+    body('message')
+      .isString().withMessage('Message must be a string')
+      .trim()
+      .isLength({ min: 1, max: 500 }).withMessage('Message must be between 1 and 500 characters')
+      .escape()
+  ],
+  drawData: [
+    body('x').isNumeric().withMessage('x must be a number'),
+    body('y').isNumeric().withMessage('y must be a number'),
+    body('color').isString().withMessage('color must be a string'),
+    body('size').isNumeric().withMessage('size must be a number')
+  ]
 };
+
+// Export the validation middleware for use in routes
+// Note: This is currently not used but kept for future route validation
+// eslint-disable-next-line no-unused-vars
+const validate = (schema) => [
+  ...(validationSchemas[schema] || []),
+  (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      logger.warn('Validation failed', { errors: errors.array() });
+      return res.status(400).json({ 
+        success: false,
+        errors: errors.array() 
+      });
+    }
+    next();
+  }
+];
 
 // Sanitize input to prevent XSS
 const sanitizeInput = (input) => {
@@ -164,21 +191,7 @@ const sanitizeInput = (input) => {
   });
 };
 
-// Validation schemas
-const chatMessageSchema = [
-  body('message')
-    .isString().withMessage('Message must be a string')
-    .trim()
-    .isLength({ min: 1, max: 500 }).withMessage('Message must be between 1 and 500 characters')
-    .escape()
-];
 
-const drawDataSchema = [
-  body('x').isNumeric().withMessage('x must be a number'),
-  body('y').isNumeric().withMessage('y must be a number'),
-  body('color').isString().withMessage('color must be a string'),
-  body('size').isNumeric().withMessage('size must be a number')
-];
 
 // Initialize Socket.IO with CORS and other security options
 const io = new Server(server, {
@@ -221,12 +234,9 @@ async function loadInitialData() {
     users = await User.find({ lastActive: { $gte: oneHourAgo } });
     drawingHistory = await Drawing.find().sort({ timestamp: 1 }).limit(100);
     
-    // Logging removed for production
-    if (process.env.NODE_ENV !== 'production') {
-      console.log(`Loaded ${users.length} active users and ${drawingHistory.length} drawings`);
-    }
-  } catch (err) {
-    console.error('Error loading initial data:', err);
+    logger.info('Initial data loaded');
+  } catch (error) {
+    logger.error('Error loading initial data:', { error: error.message });
   }
 }
 
@@ -240,9 +250,7 @@ io.on('connection', async (socket) => {
   // Set a connection timeout
   const connectionTimeout = setTimeout(() => {
     socket.disconnect(true);
-    if (process.env.NODE_ENV !== 'production') {
-      console.log(`Connection timeout for socket ${socket.id}`);
-    }
+    logger.warn(`Connection timeout for socket ${socket.id}`);
   }, 30000); // 30 seconds timeout
 
   try {
@@ -289,9 +297,7 @@ io.on('connection', async (socket) => {
       color: user.color
     });
     
-    if (process.env.NODE_ENV !== 'production') {
-      console.log(`User connected: ${user.name} (${socket.id})`);
-    }
+    logger.info(`User connected: ${user.name} (${socket.id})`);
     
     // Handle drawing events with validation
     socket.on('draw', async (data) => {
@@ -367,21 +373,29 @@ io.on('connection', async (socket) => {
     
     // Handle user disconnection
     socket.on('disconnect', async () => {
-      if (process.env.NODE_ENV !== 'production') {
-        console.log(`User disconnected: ${user.name} (${socket.id})`);
+      logger.info(`User disconnected: ${user?.name || 'unknown'} (${socket.id})`);
+      
+      if (user) {
+        // Remove user from active users
+        users = users.filter(u => u.id !== socket.id);
+        
+        // Update last active time in database
+        try {
+          await User.updateOne(
+            { id: user.id },
+            { $set: { lastActive: new Date() } }
+          );
+        } catch (err) {
+          logger.error('Error updating user last active time:', { error: err.message });
+        }
+        
+        // Notify other users
+        socket.broadcast.emit('userLeft', { id: socket.id });
       }
-      
-      // Remove user from active users
-      users = users.filter(u => u.id !== socket.id);
-      
-      // Notify other users
-      socket.broadcast.emit('userLeft', { id: socket.id });
     });
     
   } catch (err) {
-    if (process.env.NODE_ENV !== 'production') {
-      console.error('Error in socket connection:', err);
-    }
+    logger.error('Error in socket connection:', { error: err.message, stack: err.stack });
     socket.emit('error', { message: 'An error occurred. Please refresh the page.' });
   }
 });
@@ -448,17 +462,19 @@ startServer();
 
 // Handle uncaught exceptions
 process.on('uncaughtException', (error) => {
-  if (process.env.NODE_ENV !== 'production') {
-    console.error('Uncaught Exception:', error);
-  }
+  logger.error('Uncaught Exception:', { 
+    error: error.message, 
+    stack: error.stack 
+  });
   // Perform cleanup if needed
   process.exit(1);
 });
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (reason, promise) => {
-  if (process.env.NODE_ENV !== 'production') {
-    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-  }
-  // Application specific logging, throwing an error, or other logic here
+  logger.error('Unhandled Rejection at:', { 
+    promise: String(promise), 
+    reason: reason instanceof Error ? reason.message : reason,
+    stack: reason instanceof Error ? reason.stack : undefined
+  });
 });
