@@ -1,6 +1,14 @@
+// DOM Elements
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
-const socket = io();
+const socket = io({
+  reconnection: true,
+  reconnectionAttempts: 5,
+  reconnectionDelay: 1000,
+  timeout: 20000
+});
+
+// UI Elements
 const colorPicker = document.getElementById('color');
 const brushSlider = document.getElementById('size');
 const toolSelect = document.getElementById('tool');
@@ -18,8 +26,13 @@ const increaseButton = document.getElementById('increase');
 const decreaseButton = document.getElementById('decrease');
 const eraserButton = document.getElementById('eraser');
 const modeToggle = document.getElementById('mode-toggle');
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
+const loadingIndicator = document.createElement('div');
+loadingIndicator.className = 'loading';
+loadingIndicator.textContent = 'Connecting...';
+document.body.appendChild(loadingIndicator);
+
+// State Management
+// State Management
 let drawing = false;
 let erasing = false;
 let brushSize = 5;
@@ -30,6 +43,19 @@ let eraseMode = 'single';
 let startX, startY;
 let drawingHistory = [];
 let undoneHistory = [];
+let isConnected = false;
+let reconnectAttempts = 0;
+const MAX_RECONNECT_ATTEMPTS = 5;
+
+// Initialize canvas size
+updateCanvasSizeDisplay();
+// Set initial canvas size with safe defaults
+const initialWidth = Math.min(1200, window.innerWidth * 0.9);
+const initialHeight = Math.min(800, window.innerHeight * 0.8);
+canvas.width = initialWidth;
+canvas.height = initialHeight;
+widthInput.value = Math.round(initialWidth);
+heightInput.value = Math.round(initialHeight);
 themeToggle.addEventListener('click', () => {
     document.body.classList.toggle('dark-theme');
 });
@@ -271,34 +297,131 @@ function sendMessage() {
         messageInput.value = '';
     }
 }
-socket.on('drawing', ({ x, y, color, size, start }) => {
-    ctx.lineWidth = size;
-    ctx.strokeStyle = color;
-    if (start) {
-        ctx.beginPath();
-        if (x !== null && y !== null) {
-            ctx.moveTo(x, y); // Move to the start position
-        }
-    } else {
-        if (x !== null && y !== null) {
-            ctx.lineTo(x, y);
-            ctx.stroke();
-            ctx.beginPath(); // Prepare for the next segment
-            ctx.moveTo(x, y);
-        }
-    }
+// Connection status handlers
+const updateConnectionStatus = (status) => {
+  const statusElement = document.getElementById('connection-status') || (() => {
+    const el = document.createElement('div');
+    el.id = 'connection-status';
+    el.style.position = 'fixed';
+    el.style.bottom = '10px';
+    el.style.right = '10px';
+    el.style.padding = '5px 10px';
+    el.style.borderRadius = '3px';
+    el.style.fontSize = '12px';
+    document.body.appendChild(el);
+    return el;
+  })();
+  
+  statusElement.textContent = status.message;
+  statusElement.style.backgroundColor = status.isError ? '#ffebee' : '#e8f5e9';
+  statusElement.style.color = status.isError ? '#c62828' : '#2e7d32';
+  
+  if (status.isError) {
+    console.error('Connection Error:', status.message);
+  } else {
+    console.log('Connection Status:', status.message);
+  }
+};
+
+// Socket.IO event handlers
+socket.on('connect', () => {
+  isConnected = true;
+  reconnectAttempts = 0;
+  loadingIndicator.style.display = 'none';
+  updateConnectionStatus({ message: 'Connected', isError: false });
+});
+
+socket.on('disconnect', () => {
+  isConnected = false;
+  loadingIndicator.style.display = 'block';
+  loadingIndicator.textContent = 'Reconnecting...';
+  updateConnectionStatus({ message: 'Disconnected. Reconnecting...', isError: true });
+});
+
+socket.on('connect_error', (error) => {
+  reconnectAttempts++;
+  if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+    loadingIndicator.textContent = 'Connection failed. Please refresh the page.';
+    updateConnectionStatus({ 
+      message: 'Connection failed. Please refresh the page.', 
+      isError: true 
+    });
+  } else {
+    loadingIndicator.textContent = `Reconnecting (${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})...`;
+  }
+  console.error('Connection Error:', error);
+});
+
+// Drawing event handlers
+socket.on('drawing', (data) => {
+  if (!data) {
+    console.error('Received invalid drawing data');
+    return;
+  }
+  ctx.lineWidth = data.size;
+  ctx.strokeStyle = data.color;
+  if (data.start) {
+      ctx.beginPath();
+      if (data.x !== null && data.y !== null) {
+          ctx.moveTo(data.x, data.y); // Move to the start position
+      }
+  } else {
+      if (data.x !== null && data.y !== null) {
+          ctx.lineTo(data.x, data.y);
+          ctx.stroke();
+          ctx.beginPath(); // Prepare for the next segment
+          ctx.moveTo(data.x, data.y);
+      }
+  }
 });
 let username = prompt("Enter your name:", "Guest");
 if (!username || username.trim() === "Guest") {
     username = `Guest${Math.floor(Math.random() * 10000)}`;
 }
 socket.emit('user joined', username);
-const displayMessage = (data) => {
-    const li = document.createElement('li');
-    li.className = data.username === username ? 'sender' : 'receiver'; 
-    li.innerHTML = `<span class="username">${data.username}:</span> ${data.msg}`;
-    messages.appendChild(li);
-    messages.scrollTop = messages.scrollHeight; 
+function displayMessage(data) {
+  try {
+    const messageElement = document.createElement('div');
+    messageElement.id = data.id || '';
+    messageElement.className = 'message';
+    
+    if (data.isError) {
+      messageElement.classList.add('error');
+    } else if (data.isSending) {
+      messageElement.classList.add('sending');
+    }
+    
+    const time = new Date(data.timestamp).toLocaleTimeString();
+    messageElement.innerHTML = `
+      <span class="username">${escapeHtml(data.username)}</span>
+      <span class="time">${time}</span>
+      <div class="message-content">${escapeHtml(data.message)}</div>
+    `;
+    
+    messages.appendChild(messageElement);
+    messages.scrollTop = messages.scrollHeight;
+    
+    // Auto-hide system messages after 5 seconds
+    if (data.username === 'System' && !data.isError) {
+      setTimeout(() => {
+        messageElement.style.opacity = '0.7';
+      }, 3000);
+    }
+  } catch (error) {
+    console.error('Error displaying message:', error);
+  }
+}
+
+// Helper function to escape HTML
+function escapeHtml(unsafe) {
+  if (!unsafe) return '';
+  return unsafe
+    .toString()
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 };
 socket.on('chat message', (data) => {
     displayMessage(data);
