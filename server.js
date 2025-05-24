@@ -9,7 +9,7 @@ const mongoose = require('mongoose');
 const { body, validationResult } = require('express-validator');
 const winston = require('winston');
 const sanitizeHtml = require('sanitize-html');
-require('dotenv').config();
+require('dotenv').config({ path: process.env.NODE_ENV === 'test' ? '.env.test' : '.env' });
 
 // Configure Winston logger
 const logger = winston.createLogger({
@@ -98,6 +98,9 @@ const isProduction = process.env.NODE_ENV === 'production';
 // Initialize Express app
 const app = express();
 const server = http.createServer(app);
+
+// Export app and server for testing
+module.exports = { app, server };
 
 // Security Middleware
 app.use(helmet({
@@ -457,8 +460,10 @@ const startServer = async () => {
   }
 };
 
-// Start the application
-startServer();
+// Only start the server if this file is run directly (not when imported for tests)
+if (require.main === module) {
+  startServer();
+}
 
 // Handle uncaught exceptions
 process.on('uncaughtException', (error) => {
