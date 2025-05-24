@@ -43,9 +43,9 @@ Inscribe is an intuitive and engaging web application that allows users to creat
 
 ### Prerequisites
 
-- Node.js (v18 or higher)
-- npm (v9 or higher) or yarn
-- MongoDB (for persistent storage)
+- Node.js 18.x or later
+- npm 9.x or later
+- MongoDB Atlas account (for production)
 
 ### Installation
 
@@ -60,74 +60,56 @@ Inscribe is an intuitive and engaging web application that allows users to creat
    npm install
    ```
 
-3. Copy the example environment file and update with your configuration:
-   ```bash
-   cp .env.example .env
-   ```
-   Update the `.env` file with your MongoDB connection string and other settings.
+3. Set up environment variables:
+   - Copy `.env.example` to `.env`
+   - Update the variables in `.env` with your configuration
 
 4. Start the development server:
    ```bash
    npm run dev
    ```
-   This will start the server with nodemon for automatic reloading.
 
-5. Open your browser and navigate to `http://localhost:3000`
+5. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-### Production Deployment
+## 🚀 Deployment
 
-1. Build the application:
-   ```bash
-   npm run build
-   ```
+### Render.com (Recommended)
 
-2. Start the production server:
-   ```bash
-   npm start
-   ```
+1. Push your code to a GitHub repository
+2. Create a new Web Service on Render
+3. Connect your GitHub repository
+4. Configure the service:
+   - **Name**: inscribe
+   - **Region**: Choose the closest to your users
+   - **Branch**: main
+   - **Build Command**: `npm install`
+   - **Start Command**: `npm start`
+5. Add environment variables from your `.env` file
+6. Click "Create Web Service"
 
-   Or use PM2 for process management:
-   ```bash
-   npm install -g pm2
-   pm2 start server.js --name "inscribe"
-   ```
+### MongoDB Atlas Setup
 
-3. The application will be available at `http://localhost:3000` (or your configured port)
+1. Create a free MongoDB Atlas account at [https://www.mongodb.com/cloud/atlas](https://www.mongodb.com/cloud/atlas)
+2. Create a new project and build a free shared cluster
+3. Create a database user with read/write access
+4. Add your IP address to the IP whitelist
+5. Get your connection string from the "Connect" button
+6. Update the `MONGODB_URI` in your `.env` file
 
-## 🛠️ Development
+## 🛠 Development
 
 ### Available Scripts
 
 - `npm start` - Start the production server
-- `npm run dev` - Start the development server with nodemon
+- `npm run dev` - Start the development server with hot-reload
+- `npm run prod` - Start in production mode
 - `npm run lint` - Run ESLint
+- `npm run lint:fix` - Fix linting issues
 - `npm run format` - Format code with Prettier
-- `npm test` - Run tests (coming soon)
-
-### Project Structure
-
-```
-Inscribe/
-├── public/           # Static files (HTML, CSS, JS, images)
-│   ├── index.html    # Main HTML file
-│   ├── script.js     # Client-side JavaScript
-│   └── styles.css    # Main stylesheet
-├── server.js         # Main server file
-├── package.json      # Project dependencies and scripts
-├── .env.example      # Example environment variables
-├── .eslintrc.json    # ESLint configuration
-└── .gitignore        # Git ignore file
-```
 
 ### Environment Variables
 
-Create a `.env` file in the root directory with the following variables:
-
-```env
-NODE_ENV=development
-PORT=3000
-MONGODB_URI=mongodb://localhost:27017/inscribe
-SESSION_SECRET=your_session_secret
+See [.env.example](.env.example) for all available environment variables.
 RATE_LIMIT_WINDOW_MS=900000
 RATE_LIMIT_MAX=100
 ```
