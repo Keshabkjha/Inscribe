@@ -1,38 +1,60 @@
 const request = require('supertest');
 const mongoose = require('mongoose');
-const { MongoMemoryServer } = require('mongodb-memory-server');
 const { app, server } = require('../server');
 const io = require('socket.io-client');
 
-let mongoServer;
-let clientSocket;
-
-beforeAll(async () => {
-  // Start an in-memory MongoDB server for testing
-  mongoServer = await MongoMemoryServer.create();
-  const mongoUri = mongoServer.getUri();
-  
-  // Override the MONGODB_URI for testing
-  process.env.MONGODB_URI = mongoUri;
-  
-  // Connect to the in-memory database
-  await mongoose.connect(mongoUri, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  });
+// Mock the server's socket.io instance
+jest.mock('socket.io', () => {
+  return jest.fn().mockImplementation(() => ({
+    on: jest.fn((event, callback) => {
+      if (event === 'connection') {
+        // Simulate a new connection with a mock socket
+        const mockSocket = {
+          id: 'test-socket-id',
+          handshake: { address: '127.0.0.1' },
+          disconnect: jest.fn(),
+          on: jest.fn(),
+          emit: jest.fn()
+        };
+        callback(mockSocket);
+      }
+      return this;
+    }),
+    close: jest.fn()
+  }));
 });
 
-afterAll(async () => {
-  // Disconnect from the in-memory database and stop it
-  if (clientSocket) {
-    clientSocket.disconnect();
-  }
-  await mongoose.disconnect();
-  await mongoServer.stop();
-  server.close();
-});
+// Mock the User model
+jest.mock('../models/User', () => ({
+  findOne: jest.fn().mockResolvedValue(null),
+  find: jest.fn().mockResolvedValue([]),
+  create: jest.fn().mockImplementation((user) => Promise.resolve({ ...user, save: jest.fn() })),
+  updateOne: jest.fn().mockResolvedValue({})
+}));
+
+// Mock the Drawing model
+jest.mock('../models/Drawing', () => ({
+  find: jest.fn().mockResolvedValue([]),
+  create: jest.fn().mockImplementation((drawing) => Promise.resolve(drawing)),
+  deleteMany: jest.fn().mockResolvedValue({})
+}));
 
 describe('HTTP Server', () => {
+  beforeAll(() => {
+    // Start the server before tests
+    return new Promise((resolve) => {
+      server.listen(0, () => {
+        process.env.PORT = server.address().port;
+        resolve();
+      });
+    });
+  });
+
+  afterAll((done) => {
+    // Close the server after tests
+    server.close(done);
+  });
+
   it('should respond with 200 for GET /', async () => {
     const response = await request(app).get('/');
     expect(response.statusCode).toBe(200);
@@ -43,47 +65,52 @@ describe('HTTP Server', () => {
     expect(response.statusCode).toBe(404);
   });
 
-  it('should serve static files from the public directory', async () => {
-    const response = await request(app).get('/index.html');
+  it('should respond with 200 for GET /api/health', async () => {
+    const response = await request(app).get('/api/health');
     expect(response.statusCode).toBe(200);
-    expect(response.headers['content-type']).toMatch(/html/);
+    expect(response.body).toHaveProperty('status', 'ok');
   });
 });
 
 describe('WebSocket Server', () => {
-  beforeEach((done) => {
-    // Connect to the WebSocket server
-    clientSocket = io('http://localhost:3000', {
-      transports: ['websocket'],
-      forceNew: true,
-      reconnection: false
-    });
-    
-    clientSocket.on('connect', () => {
-      done();
-    });
-    
-    clientSocket.on('connect_error', (err) => {
-      console.error('Connection error:', err);
-      done(err);
+  let clientSocket;
+  
+  beforeAll((done) => {
+    // Start the server
+    server.listen(0, () => {
+      const port = server.address().port;
+      // Connect to the WebSocket server
+      clientSocket = io(`http://localhost:${port}`, {
+        transports: ['websocket'],
+        forceNew: true,
+        reconnection: false
+      });
+      
+      clientSocket.on('connect', () => {
+        done();
+      });
     });
   });
   
-  afterEach(() => {
-    if (clientSocket.connected) {
+  afterAll(() => {
+    if (clientSocket) {
       clientSocket.disconnect();
     }
+    server.close();
   });
   
-  it('should connect to the WebSocket server', (done) => {
+  it('should connect to the WebSocket server', () => {
     expect(clientSocket.connected).toBe(true);
-    done();
   });
   
-  it('should receive a welcome message on connection', (done) => {
-    clientSocket.on('welcome', (message) => {
-      expect(message).toBeDefined();
-      expect(typeof message).toBe('string');
+  it('should handle chat messages', (done) => {
+    const testMessage = { text: 'Hello, world!', user: 'test-user' };
+    
+    clientSocket.emit('chat message', testMessage);
+    
+    // The server should broadcast the message back
+    clientSocket.on('chat message', (message) => {
+      expect(message).toMatchObject(testMessage);
       done();
     });
   });

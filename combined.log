@@ -1,0 +1,6 @@
+{"level":"info","message":"Connected to MongoDB","timestamp":"2025-05-24T19:04:22.119Z"}
+{"environment":"production","level":"info","message":"Server is running on port 10000","mongoDBConfigured":true,"nodeVersion":"v20.17.0","timestamp":"2025-05-24T19:04:22.128Z"}
+{"level":"info","message":"Connected to MongoDB","timestamp":"2025-05-24T19:04:22.764Z"}
+{"level":"info","message":"Initial data loaded","timestamp":"2025-05-24T19:04:22.942Z"}
+{"level":"info","message":"User connected: User7741 (qbqOtO3QIMIN6Xb7AAAB)","timestamp":"2025-05-24T19:04:45.353Z"}
+{"level":"info","message":"User disconnected: User7741 (qbqOtO3QIMIN6Xb7AAAB)","timestamp":"2025-05-24T19:05:42.050Z"}
