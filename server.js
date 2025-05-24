@@ -7,13 +7,48 @@ const helmet = require('helmet');
 const cors = require('cors');
 const mongoose = require('mongoose');
 const { body, validationResult } = require('express-validator');
+const winston = require('winston');
+const sanitizeHtml = require('sanitize-html');
 require('dotenv').config();
+
+// Configure Winston logger
+const logger = winston.createLogger({
+  level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.json()
+  ),
+  transports: [
+    new winston.transports.File({ filename: 'error.log', level: 'error' }),
+    new winston.transports.File({ filename: 'combined.log' }),
+  ],
+});
+
+// Add console transport in non-production environments
+if (process.env.NODE_ENV !== 'production') {
+  logger.add(new winston.transports.Console({
+    format: winston.format.combine(
+      winston.format.colorize(),
+      winston.format.simple()
+    ),
+  }));
+}
+
+// Handle uncaught exceptions and rejections
+process.on('uncaughtException', (error) => {
+  logger.error('Uncaught Exception:', error);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  logger.error('Unhandled Rejection at:', { promise, reason });
+});
 
 // MongoDB Connection
 const MONGODB_URI = process.env.MONGODB_URI;
 
 if (!MONGODB_URI) {
-  console.error('MongoDB connection string is not defined. Please set MONGODB_URI in your .env file');
+  logger.error('MongoDB connection string is not defined. Please set MONGODB_URI in your .env file');
   process.exit(1);
 }
 
@@ -21,21 +56,20 @@ if (!MONGODB_URI) {
 const connectDB = async () => {
   try {
     await mongoose.connect(MONGODB_URI);
-    console.log('Connected to MongoDB');
+    logger.info('Connected to MongoDB');
   } catch (error) {
-    console.error('MongoDB connection error:', error.message);
-    // Exit process with failure
+    logger.error('MongoDB connection error:', error.message);
     process.exit(1);
   }
 };
 
 // Handle MongoDB connection events
 mongoose.connection.on('error', err => {
-  console.error('MongoDB connection error:', err);
+  logger.error('MongoDB connection error:', err);
 });
 
 mongoose.connection.on('disconnected', () => {
-  console.log('MongoDB disconnected');
+  logger.warn('MongoDB disconnected');
 });
 
 // Connect to the database
@@ -103,7 +137,7 @@ const apiLimiter = rateLimit({
 app.use('/api/', apiLimiter);
 
 // Error handling middleware
-app.use((err, req, res, next) => {
+app.use((err, req, res, _next) => {
   console.error(err.stack);
   res.status(500).json({ error: 'Something went wrong!' });
 });
@@ -112,10 +146,39 @@ app.use((err, req, res, next) => {
 const validateInput = (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
+    logger.warn('Validation failed', { errors: errors.array() });
+    return res.status(400).json({ 
+      success: false,
+      errors: errors.array() 
+    });
   }
   next();
 };
+
+// Sanitize input to prevent XSS
+const sanitizeInput = (input) => {
+  if (typeof input !== 'string') return '';
+  return sanitizeHtml(input, {
+    allowedTags: [],
+    allowedAttributes: {}
+  });
+};
+
+// Validation schemas
+const chatMessageSchema = [
+  body('message')
+    .isString().withMessage('Message must be a string')
+    .trim()
+    .isLength({ min: 1, max: 500 }).withMessage('Message must be between 1 and 500 characters')
+    .escape()
+];
+
+const drawDataSchema = [
+  body('x').isNumeric().withMessage('x must be a number'),
+  body('y').isNumeric().withMessage('y must be a number'),
+  body('color').isString().withMessage('color must be a string'),
+  body('size').isNumeric().withMessage('size must be a number')
+];
 
 // Initialize Socket.IO with CORS and other security options
 const io = new Server(server, {
@@ -158,27 +221,28 @@ async function loadInitialData() {
     users = await User.find({ lastActive: { $gte: oneHourAgo } });
     drawingHistory = await Drawing.find().sort({ timestamp: 1 }).limit(100);
     
-    console.log(`Loaded ${users.length} active users and ${drawingHistory.length} drawings`);
+    // Logging removed for production
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`Loaded ${users.length} active users and ${drawingHistory.length} drawings`);
+    }
   } catch (err) {
     console.error('Error loading initial data:', err);
   }
 }
 
 // Call the function to load initial data
-loadInitialData();
-
-// Sanitize input to prevent XSS
-const sanitizeInput = (input) => {
-    if (typeof input !== 'string') return '';
-    return input.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-};
+loadInitialData().catch(err => {
+  logger.error('Failed to load initial data:', err);
+});
 
 // Socket.IO connection handling with error handling and validation
 io.on('connection', async (socket) => {
   // Set a connection timeout
   const connectionTimeout = setTimeout(() => {
     socket.disconnect(true);
-    console.log(`Connection timeout for socket ${socket.id}`);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`Connection timeout for socket ${socket.id}`);
+    }
   }, 30000); // 30 seconds timeout
 
   try {
@@ -225,13 +289,30 @@ io.on('connection', async (socket) => {
       color: user.color
     });
     
-    console.log(`User connected: ${user.name} (${socket.id})`);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`User connected: ${user.name} (${socket.id})`);
+    }
     
-    // Handle drawing events
+    // Handle drawing events with validation
     socket.on('draw', async (data) => {
       try {
+        // Validate drawing data
+        if (!data || typeof data !== 'object') {
+          logger.warn('Invalid drawing data format');
+          return;
+        }
+
+        // Create a sanitized copy of the data
+        const sanitizedData = {
+          x: Number(data.x) || 0,
+          y: Number(data.y) || 0,
+          color: sanitizeHtml(String(data.color || '#000000')),
+          size: Math.max(1, Math.min(Number(data.size) || 5, 50)),
+          type: sanitizeHtml(String(data.type || 'draw'))
+        };
+
         // Save drawing to database
-        const drawing = new Drawing({ data });
+        const drawing = new Drawing({ data: sanitizedData });
         await drawing.save();
         
         // Add to in-memory history (keep only last 100 drawings in memory)
@@ -241,26 +322,54 @@ io.on('connection', async (socket) => {
         }
         
         // Broadcast to all clients
-        socket.broadcast.emit('draw', data);
+        socket.broadcast.emit('draw', sanitizedData);
       } catch (err) {
-        console.error('Error saving drawing:', err);
+        logger.error('Error saving drawing:', { error: err.message, stack: err.stack });
       }
     });
     
-    // Handle chat messages
+    // Handle chat messages with validation and sanitization
     socket.on('chatMessage', (data) => {
-      io.emit('chatMessage', {
-        userId: user.id,
-        userName: user.name,
-        userColor: user.color,
-        message: data.message,
-        timestamp: new Date()
-      });
+      try {
+        if (!data || typeof data !== 'object' || !data.message) {
+          logger.warn('Invalid chat message format');
+          return;
+        }
+
+        // Sanitize message
+        const sanitizedMessage = sanitizeInput(data.message);
+        
+        if (!sanitizedMessage.trim()) {
+          logger.warn('Empty message after sanitization');
+          return;
+        }
+
+        const messageData = {
+          userId: user.id,
+          userName: user.name,
+          userColor: user.color,
+          message: sanitizedMessage,
+          timestamp: new Date()
+        };
+
+        // Log the message (without user color for privacy)
+        logger.info('Chat message', { 
+          userId: user.id, 
+          userName: user.name,
+          messageLength: sanitizedMessage.length 
+        });
+
+        io.emit('chatMessage', messageData);
+      } catch (err) {
+        logger.error('Error processing chat message:', { error: err.message });
+      }
     });
     
     // Handle user disconnection
     socket.on('disconnect', async () => {
-      console.log(`User disconnected: ${user.name} (${socket.id})`);
+      if (process.env.NODE_ENV !== 'production') {
+        console.log(`User disconnected: ${user.name} (${socket.id})`);
+      }
       
       // Remove user from active users
       users = users.filter(u => u.id !== socket.id);
@@ -270,18 +379,34 @@ io.on('connection', async (socket) => {
     });
     
   } catch (err) {
-    console.error('Error in socket connection:', err);
+    if (process.env.NODE_ENV !== 'production') {
+      console.error('Error in socket connection:', err);
+    }
     socket.emit('error', { message: 'An error occurred. Please refresh the page.' });
   }
 });
 
 // Handle graceful shutdown
-process.on('SIGINT', () => {
-  console.log('Server shutting down...');
+const shutdown = (signal) => {
+  logger.info(`Received ${signal}. Starting graceful shutdown...`);
+  
   server.close(() => {
-    console.log('HTTP server closed.');
-    process.exit(0);
+    mongoose.connection.close(false, () => {
+      logger.info('MongoDB connection closed.');
+      process.exit(0);
+    });
   });
+
+  // Force shutdown after 5 seconds
+  setTimeout(() => {
+    logger.error('Could not close connections in time, forcefully shutting down');
+    process.exit(1);
+  }, 5000);
+};
+
+// Handle different shutdown signals
+['SIGINT', 'SIGTERM', 'SIGQUIT'].forEach(signal => {
+  process.on(signal, () => shutdown(signal));
 });
 
 // Start the server after MongoDB connection is established
@@ -291,20 +416,29 @@ const startServer = async () => {
     
     const PORT = process.env.PORT || 3000;
     const serverInstance = server.listen(PORT, '0.0.0.0', () => {
-      console.log(`Server is running on port ${PORT}`);
-      console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-      console.log(`MongoDB URI: ${process.env.MONGODB_URI ? 'Configured' : 'Not configured'}`);
+      logger.info(`Server is running on port ${PORT}`, {
+        environment: process.env.NODE_ENV || 'development',
+        mongoDBConfigured: !!process.env.MONGODB_URI,
+        nodeVersion: process.version
+      });
     });
 
     // Handle server errors
     serverInstance.on('error', (error) => {
-      console.error('Server error:', error);
+      logger.error('Server error:', { 
+        error: error.message, 
+        code: error.code,
+        stack: error.stack 
+      });
       process.exit(1);
     });
 
     return serverInstance;
   } catch (error) {
-    console.error('Failed to start server:', error);
+    logger.error('Failed to start server:', { 
+      error: error.message, 
+      stack: error.stack 
+    });
     process.exit(1);
   }
 };
@@ -314,13 +448,17 @@ startServer();
 
 // Handle uncaught exceptions
 process.on('uncaughtException', (error) => {
-  console.error('Uncaught Exception:', error);
+  if (process.env.NODE_ENV !== 'production') {
+    console.error('Uncaught Exception:', error);
+  }
   // Perform cleanup if needed
   process.exit(1);
 });
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (reason, promise) => {
-  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  if (process.env.NODE_ENV !== 'production') {
+    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  }
   // Application specific logging, throwing an error, or other logic here
 });
