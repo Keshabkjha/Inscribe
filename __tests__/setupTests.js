@@ -1,3 +1,5 @@
+/* eslint-env jest */
+
 // Setup file for Jest tests
 process.env.NODE_ENV = 'test';
 process.env.PORT = 5000;
