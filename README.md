@@ -113,39 +113,7 @@ Get started with Inscribe in under 5 minutes:
 5. **Open in browser**
    Visit `http://localhost:3000` to start using Inscribe!
 
-## ⚙️ Installation
 
-### Prerequisites
-
-- Node.js 18.x or later
-- npm 9.x or later
-- MongoDB Atlas account (for production)
-
-### Development Setup
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/Keshabkjha/Inscribe.git
-   cd Inscribe
-   ```
-
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
-
-3. **Configure environment**
-   - Copy `.env.example` to `.env`
-   - Update the variables in `.env` with your configuration
-
-4. **Start the development server**
-   ```bash
-   npm run dev
-   ```
-   This will start the server with hot-reload enabled.
-
-5. **Access the application**
-   Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## 🌐 Deployment
 
@@ -198,6 +166,31 @@ Get started with Inscribe in under 5 minutes:
 - `npm test` - Run tests (coming soon)
 
 ### Project Structure
+
+```
+Inscribe/
+├── .github/               # GitHub configuration files
+│   ├── workflows/         # GitHub Actions workflows
+│   └── ISSUE_TEMPLATE/    # Issue templates
+├── docs/                  # Documentation files
+├── public/                # Static files
+│   ├── css/               # Stylesheets
+│   ├── js/                # Client-side JavaScript
+│   └── images/            # Image assets
+├── .editorconfig          # Editor configuration
+├── .env.example           # Example environment variables
+├── .eslintrc.json         # ESLint configuration
+├── .gitignore            # Git ignore rules
+├── CHANGELOG.md          # Version history
+├── CODE_OF_CONDUCT.md    # Community guidelines
+├── CONTRIBUTING.md      # Contribution guide
+├── LICENSE              # MIT License
+├── package.json         # Project configuration
+├── README.md           # Project documentation
+├── ROADMAP.md          # Development roadmap
+├── SECURITY.md         # Security policy
+└── server.js          # Main application file
+```
 
 ```
 Inscribe/
@@ -266,6 +259,8 @@ Found a bug? Please open an issue with:
 - Expected vs actual behavior
 - Screenshots if applicable
 
+For more details, please check out our [Contributing Guide](CONTRIBUTING.md).
+
 ## 📝 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
@@ -279,45 +274,29 @@ LinkedIn: [keshabkjha](https://www.linkedin.com/in/keshabkjha/)
 
 Project Link: [https://github.com/Keshabkjha/Inscribe](https://github.com/Keshabkjha/Inscribe)
 
-## 🙏 Acknowledgments
+## 🧰 Tech Stack
 
-Special thanks to these amazing projects that make Inscribe possible:
+### Backend
+- [Node.js](https://nodejs.org/) - JavaScript runtime
+- [Express](https://expressjs.com/) - Web framework
+- [Socket.IO](https://socket.io/) - Real-time communication
+- [MongoDB](https://www.mongodb.com/) - NoSQL database
+- [Mongoose](https://mongoosejs.com/) - MongoDB object modeling
 
-- [Socket.IO](https://socket.io/) - Real-time bidirectional event-based communication
-- [Express](https://expressjs.com/) - Fast, unopinionated, minimalist web framework
-- [MongoDB](https://www.mongodb.com/) - The database for modern applications
-- [Mongoose](https://mongoosejs.com/) - Elegant MongoDB object modeling
-- [Canvas API](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API) - Drawing graphics on the web
-- [Font Awesome](https://fontawesome.com/) - Awesome icons
-- [Google Fonts](https://fonts.google.com/) - Beautiful, free, open-source fonts
-- [Render](https://render.com/) - Simple cloud for developers
+### Frontend
+- [Canvas API](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API) - Drawing graphics
+- [Font Awesome](https://fontawesome.com/) - Icons and UI toolkit
+- [Google Fonts](https://fonts.google.com/) - Free, open-source fonts
 
-## 🌟 Features Coming Soon
+### Deployment
+- [Render](https://render.com/) - Cloud platform
+- [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) - Cloud database
 
-### 🚧 In Progress
-- [ ] User authentication system
-- [ ] Multiple drawing rooms
-- [ ] Drawing export options (PNG, JPG, SVG)
+## 🌟 Upcoming Features
 
-### 📅 Planned
-- [ ] Text tool with formatting
-- [ ] Shape recognition
-- [ ] Sticker packs
-- [ ] Collaborative cursors
-- [ ] Version history
-- [ ] Offline mode
-- [ ] Touch screen support
-- [ ] Custom brushes
-- [ ] Layer support
-- [ ] Keyboard shortcuts customization
+For a detailed view of our development roadmap, please check out our [ROADMAP.md](ROADMAP.md) file.
 
-### 💡 Ideas
-- [ ] Real-time collaboration with video/audio
-- [ ] Template library
-- [ ] Integration with cloud storage
-- [ ] Mobile app versions
-
-## 📊 Stats
+## 📊 Project Stats
 
 [![GitHub stars](https://img.shields.io/github/stars/Keshabkjha/Inscribe?style=social)](https://github.com/Keshabkjha/Inscribe/stargazers)
 [![GitHub forks](https://img.shields.io/github/forks/Keshabkjha/Inscribe?style=social)](https://github.com/Keshabkjha/Inscribe/network/members)
@@ -329,36 +308,25 @@ Special thanks to these amazing projects that make Inscribe possible:
 
 ---
 
+## 🙏 Acknowledgments
+
+Special thanks to these amazing projects and communities:
+
+- [Socket.IO](https://socket.io/) - For enabling real-time communication
+- [Fabric.js](http://fabricjs.com/) - For the powerful canvas library
+- [Render](https://render.com/) - For the generous hosting
+- [Shields.io](https://shields.io/) - For the beautiful badges
+- The entire open-source community for their invaluable contributions
+
+---
+
 <div align="center">
   Made with ❤️ by <a href="https://github.com/Keshabkjha">Keshab Kumar Jha</a>
 </div>
 
 
 
-## 🚀 Getting Started
 
-### Prerequisites
-
-- Node.js 18.x or later
-- npm 9.x or later
-- MongoDB Atlas account (for production)
-
-### Installation
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/Keshabkjha/Inscribe.git
-   cd Inscribe
-   ```
-
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-3. Set up environment variables:
-   - Copy `.env.example` to `.env`
-   - Update the variables in `.env` with your configuration
 
 4. Start the development server:
    ```bash
@@ -437,20 +405,12 @@ Project Link: [https://github.com/Keshabkjha/Inscribe](https://github.com/Keshab
 
 ## 🙏 Acknowledgments
 
-- [Socket.IO](https://socket.io/) - Real-time bidirectional event-based communication
-- [Express](https://expressjs.com/) - Fast, unopinionated, minimalist web framework
-- [MongoDB](https://www.mongodb.com/) - The database for modern applications
-- [Canvas API](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API) - Drawing graphics on the web
-- [Font Awesome](https://fontawesome.com/) - Awesome icons
-- [Google Fonts](https://fonts.google.com/) - Beautiful, free, open-source fonts
+Special thanks to the following projects and communities:
 
-## 🌟 Features Coming Soon
-
-- [ ] User authentication
-- [ ] Multiple drawing rooms
-- [ ] Drawing export options (PNG, JPG, SVG)
-- [ ] Text tool
-- [ ] Shape recognition
-- [ ] Sticker packs
-- [ ] Collaborative cursors
-- [ ] Version history
+- [Socket.IO](https://socket.io/) - For enabling real-time communication
+- [Express](https://expressjs.com/) - For the minimalist web framework
+- [MongoDB](https://www.mongodb.com/) - For the powerful NoSQL database
+- [Fabric.js](http://fabricjs.com/) - For the amazing canvas library
+- [Render](https://render.com/) - For the generous hosting
+- [Shields.io](https://shields.io/) - For the beautiful badges
+- The entire open-source community for their invaluable contributions 
