@@ -205,11 +205,18 @@ Inscribe/
 │   ├── index.html        # Main HTML file
 │   ├── script.js         # Client-side JavaScript
 │   └── styles.css        # Main stylesheet
-├── server.js             # Main server file
-├── package.json          # Project dependencies and scripts
-├── .env.example          # Example environment variables
-├── .eslintrc.json        # ESLint configuration
-└── .gitignore            # Git ignore file
+├── server/               # Server-side code
+│   ├── config/          # Configuration files
+│   ├── controllers/     # Request handlers
+│   ├── models/          # Database models
+│   ├── routes/          # API routes
+│   └── utils/           # Utility functions
+├── test/                # Test files
+├── .env.example         # Example environment variables
+├── .eslintrc.json       # ESLint configuration
+├── .gitignore           # Git ignore file
+├── package.json         # Project dependencies and scripts
+└── README.md            # Project documentation
 ```
 
 ### Environment Variables
@@ -326,37 +333,7 @@ Special thanks to these amazing projects that make Inscribe possible:
   Made with ❤️ by <a href="https://github.com/Keshabkjha">Keshab Kumar Jha</a>
 </div>
 
-## ✨ Features
 
-- 🎨 **Real-time Collaborative Drawing**
-  - Draw with multiple users simultaneously
-  - Multiple brush types and colors
-  - Eraser and undo/redo functionality
-  - Responsive canvas with zoom and pan support
-
-- 💬 **Built-in Chat**
-  - Real-time messaging
-  - User presence indicators
-  - Message history
-  - Typing indicators
-
-- 🎨 **Modern UI/UX**
-  - Light and dark themes
-  - Responsive design
-  - Intuitive toolbar
-  - Keyboard shortcuts
-
-- 🔒 **Security & Performance**
-  - Rate limiting and input sanitization
-  - Secure WebSocket connections
-  - Optimized rendering
-  - Offline support with auto-reconnect
-
-- 🛠 **Developer Friendly**
-  - Well-documented code
-  - Environment configuration
-  - Linting and formatting
-  - Easy deployment
 
 ## 🚀 Getting Started
 
@@ -477,12 +454,3 @@ Project Link: [https://github.com/Keshabkjha/Inscribe](https://github.com/Keshab
 - [ ] Sticker packs
 - [ ] Collaborative cursors
 - [ ] Version history
-
-## 📊 Stats
-
-![GitHub stars](https://img.shields.io/github/stars/Keshabkjha/Inscribe?style=social)
-![GitHub forks](https://img.shields.io/github/forks/Keshabkjha/Inscribe?style=social)
-![GitHub issues](https://img.shields.io/github/issues/Keshabkjha/Inscribe)
-![GitHub pull requests](https://img.shields.io/github/issues-pr/Keshabkjha/Inscribe)
-![GitHub contributors](https://img.shields.io/github/contributors/Keshabkjha/Inscribe)
-![GitHub last commit](https://img.shields.io/github/last-commit/Keshabkjha/Inscribe)
