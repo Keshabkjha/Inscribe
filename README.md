@@ -19,7 +19,6 @@
 ## 📝 Table of Contents
 - [✨ Features](#-features)
 - [🚀 Quick Start](#-quick-start)
-- [⚙️ Installation](#️-installation)
 - [🌐 Deployment](#-deployment)
 - [🔧 Development](#-development)
 - [🧰 Tech Stack](#-tech-stack)
@@ -27,8 +26,6 @@
 - [📝 License](#-license)
 - [📧 Contact](#-contact)
 - [🙏 Acknowledgments](#-acknowledgments)
-- [🌟 Features Coming Soon](#-features-coming-soon)
-- [📊 Stats](#-stats)
 
 ## ✨ Features
 
@@ -160,10 +157,11 @@ Get started with Inscribe in under 5 minutes:
 - `npm start` - Start the production server
 - `npm run dev` - Start the development server with hot-reload
 - `npm run prod` - Start in production mode
-- `npm run lint` - Run ESLint
-- `npm run lint:fix` - Fix linting issues
-- `npm run format` - Format code with Prettier
+- `npm run lint` - Run ESLint to check for code quality issues
+- `npm run lint:fix` - Automatically fix linting issues
+- `npm run format` - Format code using Prettier
 - `npm test` - Run tests (coming soon)
+- `npm run prepare` - Set up Git hooks (runs automatically after `npm install`)
 
 ### Project Structure
 
@@ -177,10 +175,17 @@ Inscribe/
 │   ├── css/               # Stylesheets
 │   ├── js/                # Client-side JavaScript
 │   └── images/            # Image assets
+├── server/                # Server-side code
+│   ├── config/            # Configuration files
+│   ├── controllers/       # Request handlers
+│   ├── models/            # Database models
+│   ├── routes/            # API routes
+│   └── utils/             # Utility functions
 ├── .editorconfig          # Editor configuration
 ├── .env.example           # Example environment variables
 ├── .eslintrc.json         # ESLint configuration
 ├── .gitignore            # Git ignore rules
+├── .prettierrc           # Code formatter config
 ├── CHANGELOG.md          # Version history
 ├── CODE_OF_CONDUCT.md    # Community guidelines
 ├── CONTRIBUTING.md      # Contribution guide
@@ -191,14 +196,6 @@ Inscribe/
 ├── SECURITY.md         # Security policy
 └── server.js          # Main application file
 ```
-
-```
-Inscribe/
-├── public/               # Static files
-│   ├── index.html        # Main HTML file
-│   ├── script.js         # Client-side JavaScript
-│   └── styles.css        # Main stylesheet
-├── server/               # Server-side code
 │   ├── config/          # Configuration files
 │   ├── controllers/     # Request handlers
 │   ├── models/          # Database models
@@ -291,19 +288,6 @@ Project Link: [https://github.com/Keshabkjha/Inscribe](https://github.com/Keshab
 ### Deployment
 - [Render](https://render.com/) - Cloud platform
 - [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) - Cloud database
-
-## 🌟 Upcoming Features
-
-For a detailed view of our development roadmap, please check out our [ROADMAP.md](ROADMAP.md) file.
-
-## 📊 Project Stats
-
-[![GitHub stars](https://img.shields.io/github/stars/Keshabkjha/Inscribe?style=social)](https://github.com/Keshabkjha/Inscribe/stargazers)
-[![GitHub forks](https://img.shields.io/github/forks/Keshabkjha/Inscribe?style=social)](https://github.com/Keshabkjha/Inscribe/network/members)
-[![GitHub issues](https://img.shields.io/github/issues/Keshabkjha/Inscribe)](https://github.com/Keshabkjha/Inscribe/issues)
-[![GitHub pull requests](https://img.shields.io/github/issues-pr/Keshabkjha/Inscribe)](https://github.com/Keshabkjha/Inscribe/pulls)
-[![GitHub contributors](https://img.shields.io/github/contributors/Keshabkjha/Inscribe)](https://github.com/Keshabkjha/Inscribe/graphs/contributors)
-[![GitHub last commit](https://img.shields.io/github/last-commit/Keshabkjha/Inscribe)](https://github.com/Keshabkjha/Inscribe/commits/main)
 [![GitHub license](https://img.shields.io/github/license/Keshabkjha/Inscribe)](https://github.com/Keshabkjha/Inscribe/blob/main/LICENSE)
 
 ---
@@ -373,10 +357,17 @@ Special thanks to these amazing projects and communities:
 
 ### Environment Variables
 
-See [.env.example](.env.example) for all available environment variables.
+Create a `.env` file in the root directory and add the following variables (see [.env.example](.env.example) for more details):
+
+```env
+PORT=3000
+MONGODB_URI=your_mongodb_connection_string
+NODE_ENV=development
 RATE_LIMIT_WINDOW_MS=900000
 RATE_LIMIT_MAX=100
 ```
+
+**Important**: Never commit your `.env` file or expose sensitive information.
 
 ## 🤝 Contributing
 
