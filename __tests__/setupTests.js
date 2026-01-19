@@ -26,31 +26,79 @@ jest.setTimeout(30000);
 // Mock mongoose
 jest.mock('mongoose', () => {
   const actualMongoose = jest.requireActual('mongoose');
+  const mockModels = new Map();
+
+  const createMockModel = (name) => {
+    const MockModel = class {
+      constructor(data) {
+        Object.assign(this, data);
+      }
+    };
+
+    MockModel.findOne = jest.fn().mockResolvedValue(null);
+    if (name === 'Drawing') {
+      MockModel.find = jest.fn().mockImplementation(() => ({
+        sort: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockResolvedValue([])
+      }));
+    } else {
+      MockModel.find = jest.fn().mockResolvedValue([]);
+    }
+    MockModel.updateOne = jest.fn().mockResolvedValue({});
+    MockModel.deleteMany = jest.fn().mockResolvedValue({});
+    MockModel.prototype.save = jest.fn().mockImplementation(function () {
+      return Promise.resolve(this);
+    });
+
+    return MockModel;
+  };
+
   return {
     ...actualMongoose,
     connect: jest.fn().mockResolvedValue(actualMongoose),
+    model: jest.fn((name) => {
+      if (!mockModels.has(name)) {
+        mockModels.set(name, createMockModel(name));
+      }
+      return mockModels.get(name);
+    }),
     connection: {
       ...actualMongoose.connection,
+      on: jest.fn(),
       close: jest.fn().mockResolvedValue(undefined),
     },
   };
 });
 
 // Mock socket.io-client
-jest.mock('socket.io-client', () => ({
-  __esModule: true,
-  default: jest.fn(() => ({
+const createMockSocket = () => {
+  let lastChatMessage;
+  return {
     connected: true,
     disconnect: jest.fn(),
-    on: jest.fn(),
-    emit: jest.fn(),
+    on: jest.fn((event, callback) => {
+      if (event === 'connect') {
+        callback();
+      }
+      if (event === 'chat message' && lastChatMessage) {
+        callback(lastChatMessage);
+      }
+    }),
+    emit: jest.fn((event, message) => {
+      if (event === 'chat message') {
+        lastChatMessage = message;
+      }
+    }),
     close: jest.fn(),
-  })),
-  io: jest.fn(() => ({
-    connected: true,
-    disconnect: jest.fn(),
-    on: jest.fn(),
-    emit: jest.fn(),
-    close: jest.fn(),
-  })),
-}));
+  };
+};
+
+jest.mock(
+  'socket.io-client',
+  () => {
+    const mockIo = jest.fn(() => createMockSocket());
+    mockIo.io = mockIo;
+    return mockIo;
+  },
+  { virtual: true }
+);

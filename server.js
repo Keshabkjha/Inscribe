@@ -46,14 +46,22 @@ process.on('unhandledRejection', (reason, promise) => {
 
 // MongoDB Connection
 const MONGODB_URI = process.env.MONGODB_URI;
+const shouldSkipDb = process.env.SKIP_DB === 'true';
 
-if (!MONGODB_URI) {
+if (!MONGODB_URI && !shouldSkipDb) {
   logger.error('MongoDB connection string is not defined. Please set MONGODB_URI in your .env file');
   process.exit(1);
 }
 
+if (shouldSkipDb) {
+  logger.warn('Skipping MongoDB connection because SKIP_DB is true.');
+}
+
 // Connect to MongoDB
 const connectDB = async () => {
+  if (shouldSkipDb) {
+    return;
+  }
   try {
     await mongoose.connect(MONGODB_URI);
     logger.info('Connected to MongoDB');
@@ -63,17 +71,19 @@ const connectDB = async () => {
   }
 };
 
-// Handle MongoDB connection events
-mongoose.connection.on('error', err => {
-  logger.error('MongoDB connection error:', err);
-});
+if (!shouldSkipDb) {
+  // Handle MongoDB connection events
+  mongoose.connection.on('error', err => {
+    logger.error('MongoDB connection error:', err);
+  });
 
-mongoose.connection.on('disconnected', () => {
-  logger.warn('MongoDB disconnected');
-});
+  mongoose.connection.on('disconnected', () => {
+    logger.warn('MongoDB disconnected');
+  });
 
-// Connect to the database
-connectDB();
+  // Connect to the database
+  connectDB();
+}
 
 // Define MongoDB Schema and Model
 const drawingSchema = new mongoose.Schema({
@@ -249,9 +259,11 @@ async function loadInitialData() {
 }
 
 // Call the function to load initial data
-loadInitialData().catch(err => {
-  logger.error('Failed to load initial data:', err);
-});
+if (!shouldSkipDb) {
+  loadInitialData().catch(err => {
+    logger.error('Failed to load initial data:', err);
+  });
+}
 
 // Socket.IO connection handling with error handling and validation
 io.on('connection', async (socket) => {
@@ -308,7 +320,7 @@ io.on('connection', async (socket) => {
     logger.info(`User connected: ${user.name} (${socket.id})`);
     
     // Handle drawing events with validation
-    socket.on('draw', async (data) => {
+    const handleDrawing = async (data) => {
       try {
         // Validate drawing data
         if (!data || typeof data !== 'object') {
@@ -336,22 +348,26 @@ io.on('connection', async (socket) => {
         }
         
         // Broadcast to all clients
-        socket.broadcast.emit('draw', sanitizedData);
+        socket.broadcast.emit('drawing', sanitizedData);
       } catch (err) {
         logger.error('Error saving drawing:', { error: err.message, stack: err.stack });
       }
-    });
+    };
+
+    socket.on('drawing', handleDrawing);
+    socket.on('draw', handleDrawing);
     
     // Handle chat messages with validation and sanitization
-    socket.on('chatMessage', (data) => {
+    const handleChatMessage = (data) => {
       try {
-        if (!data || typeof data !== 'object' || !data.message) {
+        const messageText = data?.message ?? data?.msg;
+        if (!data || typeof data !== 'object' || !messageText) {
           logger.warn('Invalid chat message format');
           return;
         }
 
         // Sanitize message
-        const sanitizedMessage = sanitizeInput(data.message);
+        const sanitizedMessage = sanitizeInput(messageText);
         
         if (!sanitizedMessage.trim()) {
           logger.warn('Empty message after sanitization');
@@ -373,11 +389,14 @@ io.on('connection', async (socket) => {
           messageLength: sanitizedMessage.length 
         });
 
-        io.emit('chatMessage', messageData);
+        io.emit('chat message', messageData);
       } catch (err) {
         logger.error('Error processing chat message:', { error: err.message });
       }
-    });
+    };
+
+    socket.on('chat message', handleChatMessage);
+    socket.on('chatMessage', handleChatMessage);
     
     // Handle user disconnection
     socket.on('disconnect', async () => {
@@ -413,6 +432,11 @@ const shutdown = (signal) => {
   logger.info(`Received ${signal}. Starting graceful shutdown...`);
   
   server.close(() => {
+    if (shouldSkipDb) {
+      process.exit(0);
+      return;
+    }
+
     mongoose.connection.close(false, () => {
       logger.info('MongoDB connection closed.');
       process.exit(0);
