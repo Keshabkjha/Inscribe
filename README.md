@@ -5,8 +5,7 @@
   [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
   [![Node.js](https://img.shields.io/badge/Node.js-18.x-brightgreen)](https://nodejs.org/)
   [![Socket.IO](https://img.shields.io/badge/Socket.IO-4.x-010101)](https://socket.io/)
-  [![Live Demo](https://img.shields.io/badge/Live-Demo-brightgreen)](https://inscribe-lsww.onrender.com/)
-  [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
   [![GitHub stars](https://img.shields.io/github/stars/Keshabkjha/Inscribe?style=social)](https://github.com/Keshabkjha/Inscribe/stargazers)
   
   <p align="center">
@@ -20,7 +19,6 @@
 - [✨ Features](#-features)
 - [🚀 Quick Start](#-quick-start)
 - [⚙️ Installation](#️-installation)
-- [🌐 Deployment](#-deployment)
 - [🔧 Development](#-development)
 - [🧰 Tech Stack](#-tech-stack)
 - [🤝 Contributing](#-contributing)
@@ -114,44 +112,6 @@ Get started with Inscribe in under 5 minutes:
    Visit `http://localhost:3000` to start using Inscribe!
 
 
-
-## 🌐 Deployment
-
-### Render.com (Recommended)
-
-1. **Push your code** to a GitHub repository
-2. **Create a new Web Service** on [Render](https://render.com/)
-3. **Connect your GitHub repository**
-4. **Configure the service**:
-   - **Name**: inscribe
-   - **Region**: Choose the one closest to your users
-   - **Branch**: main
-   - **Build Command**: `npm install`
-   - **Start Command**: `npm start`
-5. **Add environment variables** from your `.env` file
-6. **Deploy!** Click "Create Web Service"
-
-### MongoDB Atlas Setup
-
-1. **Create a free MongoDB Atlas account** at [mongodb.com/cloud/atlas](https://www.mongodb.com/cloud/atlas)
-2. **Create a new project** and build a free shared cluster
-3. **Set up database access**:
-   - Go to "Database Access"
-   - Click "Add New Database User"
-   - Choose "Password" authentication
-   - Create a secure password
-   - Assign "Atlas Admin" role
-4. **Configure network access**:
-   - Go to "Network Access"
-   - Add your IP address or `0.0.0.0/0` for all IPs (not recommended for production)
-5. **Get your connection string**:
-   - Click "Connect" on your cluster
-   - Choose "Connect your application"
-   - Copy the connection string
-6. **Update your `.env` file** with the connection string:
-   ```
-   MONGODB_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/inscribe?retryWrites=true&w=majority
-   ```
 
 ## 🔧 Development
 
@@ -288,10 +248,6 @@ Project Link: [https://github.com/Keshabkjha/Inscribe](https://github.com/Keshab
 - [Font Awesome](https://fontawesome.com/) - Icons and UI toolkit
 - [Google Fonts](https://fonts.google.com/) - Free, open-source fonts
 
-### Deployment
-- [Render](https://render.com/) - Cloud platform
-- [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) - Cloud database
-
 ## 🌟 Upcoming Features
 
 For a detailed view of our development roadmap, please check out our [ROADMAP.md](ROADMAP.md) file.
@@ -314,7 +270,6 @@ Special thanks to these amazing projects and communities:
 
 - [Socket.IO](https://socket.io/) - For enabling real-time communication
 - [Fabric.js](http://fabricjs.com/) - For the powerful canvas library
-- [Render](https://render.com/) - For the generous hosting
 - [Shields.io](https://shields.io/) - For the beautiful badges
 - The entire open-source community for their invaluable contributions
 
@@ -334,31 +289,6 @@ Special thanks to these amazing projects and communities:
    ```
 
 5. Open [http://localhost:3000](http://localhost:3000) in your browser.
-
-## 🚀 Deployment
-
-### Render.com (Recommended)
-
-1. Push your code to a GitHub repository
-2. Create a new Web Service on Render
-3. Connect your GitHub repository
-4. Configure the service:
-   - **Name**: inscribe
-   - **Region**: Choose the closest to your users
-   - **Branch**: main
-   - **Build Command**: `npm install`
-   - **Start Command**: `npm start`
-5. Add environment variables from your `.env` file
-6. Click "Create Web Service"
-
-### MongoDB Atlas Setup
-
-1. Create a free MongoDB Atlas account at [https://www.mongodb.com/cloud/atlas](https://www.mongodb.com/cloud/atlas)
-2. Create a new project and build a free shared cluster
-3. Create a database user with read/write access
-4. Add your IP address to the IP whitelist
-5. Get your connection string from the "Connect" button
-6. Update the `MONGODB_URI` in your `.env` file
 
 ## 🛠 Development
 

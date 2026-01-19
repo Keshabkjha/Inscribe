@@ -35,7 +35,7 @@ Create the most intuitive and feature-rich collaborative drawing platform that w
 2. **Development**: Features are developed in feature branches
 3. **Review**: Code is reviewed through pull requests
 4. **Testing**: Automated and manual testing is performed
-5. **Release**: Changes are merged to main and deployed
+5. **Release**: Changes are merged to main
 
 ## 📅 Release Schedule
 
