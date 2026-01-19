@@ -275,25 +275,45 @@ io.on('connection', async (socket) => {
 
   try {
     // Load user data from database or create new user
-    let user = await User.findOne({ id: socket.id });
-    
-    if (!user) {
-      // Generate random color for new user
-      const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEEAD', '#D4A5A5'];
-      const color = colors[Math.floor(Math.random() * colors.length)];
-      
-      user = new User({
-        id: socket.id,
-        name: `User${Math.floor(1000 + Math.random() * 9000)}`,
-        color: color,
-        lastActive: new Date()
-      });
-      
-      await user.save();
+    let user;
+    if (shouldSkipDb) {
+      user = users.find(existingUser => existingUser.id === socket.id);
+
+      if (!user) {
+        // Generate random color for new user
+        const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEEAD', '#D4A5A5'];
+        const color = colors[Math.floor(Math.random() * colors.length)];
+
+        user = {
+          id: socket.id,
+          name: `User${Math.floor(1000 + Math.random() * 9000)}`,
+          color: color,
+          lastActive: new Date()
+        };
+      } else {
+        user.lastActive = new Date();
+      }
     } else {
-      // Update last active time
-      user.lastActive = new Date();
-      await user.save();
+      user = await User.findOne({ id: socket.id });
+
+      if (!user) {
+        // Generate random color for new user
+        const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEEAD', '#D4A5A5'];
+        const color = colors[Math.floor(Math.random() * colors.length)];
+
+        user = new User({
+          id: socket.id,
+          name: `User${Math.floor(1000 + Math.random() * 9000)}`,
+          color: color,
+          lastActive: new Date()
+        });
+
+        await user.save();
+      } else {
+        // Update last active time
+        user.lastActive = new Date();
+        await user.save();
+      }
     }
     
     // Add user to active users list if not already present
@@ -338,9 +358,11 @@ io.on('connection', async (socket) => {
         };
 
         // Save drawing to database
-        const drawing = new Drawing({ data: sanitizedData });
-        await drawing.save();
-        
+        const drawing = shouldSkipDb ? { data: sanitizedData } : new Drawing({ data: sanitizedData });
+        if (!shouldSkipDb) {
+          await drawing.save();
+        }
+
         // Add to in-memory history (keep only last 100 drawings in memory)
         drawingHistory.push(drawing);
         if (drawingHistory.length > 100) {
@@ -354,7 +376,7 @@ io.on('connection', async (socket) => {
       }
     };
 
-    // Support legacy 'draw' event name alongside the current 'drawing' event.
+    // Support legacy 'draw' event name alongside the current 'drawing' event until clients migrate.
     socket.on('drawing', handleDrawing);
     socket.on('draw', handleDrawing);
     
@@ -407,17 +429,19 @@ io.on('connection', async (socket) => {
       if (user) {
         // Remove user from active users
         users = users.filter(u => u.id !== socket.id);
-        
+
         // Update last active time in database
-        try {
-          await User.updateOne(
-            { id: user.id },
-            { $set: { lastActive: new Date() } }
-          );
-        } catch (err) {
-          logger.error('Error updating user last active time:', { error: err.message });
+        if (!shouldSkipDb) {
+          try {
+            await User.updateOne(
+              { id: user.id },
+              { $set: { lastActive: new Date() } }
+            );
+          } catch (err) {
+            logger.error('Error updating user last active time:', { error: err.message });
+          }
         }
-        
+
         // Notify other users
         socket.broadcast.emit('userLeft', { id: socket.id });
       }
