@@ -106,7 +106,7 @@ describe('WebSocket Server', () => {
   });
   
   it('should handle chat messages', (done) => {
-    const testMessage = { text: 'Hello, world!', user: 'test-user' };
+    const testMessage = { message: 'Hello, world!', username: 'test-user' };
     
     clientSocket.emit('chat message', testMessage);
     

@@ -361,7 +361,7 @@ io.on('connection', async (socket) => {
     // Handle chat messages with validation and sanitization
     const handleChatMessage = (data) => {
       try {
-        const messageText = data?.message ?? data?.msg;
+        const messageText = data?.message;
         if (!data || typeof data !== 'object' || !messageText) {
           logger.warn('Invalid chat message format');
           return;
@@ -377,7 +377,7 @@ io.on('connection', async (socket) => {
 
         const messageData = {
           userId: user.id,
-          userName: user.name,
+          username: user.name,
           userColor: user.color,
           message: sanitizedMessage,
           timestamp: new Date()
