@@ -354,6 +354,7 @@ io.on('connection', async (socket) => {
       }
     };
 
+    // Support legacy 'draw' event name alongside the current 'drawing' event.
     socket.on('drawing', handleDrawing);
     socket.on('draw', handleDrawing);
     
@@ -395,6 +396,7 @@ io.on('connection', async (socket) => {
       }
     };
 
+    // Support legacy 'chatMessage' event name alongside the current 'chat message' event.
     socket.on('chat message', handleChatMessage);
     socket.on('chatMessage', handleChatMessage);
     

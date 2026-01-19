@@ -15,7 +15,7 @@
     "lint:fix": "eslint . --ext .js --fix",
     "format": "prettier --write \"**/*.{js,jsx,json,md}\"",
     "prepare": "husky install",
-    "postinstall": "node -e \"const fs=require('fs');const path=require('path');const target=path.join('node_modules','gopd','gOPD.js');if(!fs.existsSync(target)){fs.writeFileSync(target,'\\'use strict\\';\\n\\nmodule.exports = Object.getOwnPropertyDescriptor || null;\\n');}\""
+    "postinstall": "node ./scripts/patch-gopd.js"
   },
   "keywords": [
     "drawing",
