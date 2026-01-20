@@ -293,7 +293,7 @@ window.addEventListener('resize', resizeCanvasToFit);
 function sendMessage() {
     const msg = messageInput.value.trim();
     if (msg) {
-        socket.emit('chat message', { username, msg });
+        socket.emit('chat message', { message: msg });
         messageInput.value = '';
     }
 }
@@ -432,7 +432,7 @@ socket.on('update user count', (count) => {
 sendButton.addEventListener('click', () => {
     const message = messageInput.value.trim();
     if (message) {
-        socket.emit('chat message', { username, msg: message });
+        socket.emit('chat message', { message });
         messageInput.value = ''; 
     }
 });

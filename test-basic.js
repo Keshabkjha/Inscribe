@@ -6,7 +6,7 @@ const assert = require('node:assert');
 const sum = (a, b) => a + b;
 
 // Test case
-test('should add two numbers', (t) => {
+test('should add two numbers', () => {
   console.log('Running test...');
   assert.strictEqual(sum(1, 2), 3);
   console.log('Test passed!');

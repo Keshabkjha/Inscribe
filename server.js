@@ -46,14 +46,22 @@ process.on('unhandledRejection', (reason, promise) => {
 
 // MongoDB Connection
 const MONGODB_URI = process.env.MONGODB_URI;
+const shouldSkipDb = process.env.SKIP_DB === 'true';
 
-if (!MONGODB_URI) {
+if (!MONGODB_URI && !shouldSkipDb) {
   logger.error('MongoDB connection string is not defined. Please set MONGODB_URI in your .env file');
   process.exit(1);
 }
 
+if (shouldSkipDb) {
+  logger.warn('Skipping MongoDB connection because SKIP_DB is true.');
+}
+
 // Connect to MongoDB
 const connectDB = async () => {
+  if (shouldSkipDb) {
+    return;
+  }
   try {
     await mongoose.connect(MONGODB_URI);
     logger.info('Connected to MongoDB');
@@ -63,17 +71,19 @@ const connectDB = async () => {
   }
 };
 
-// Handle MongoDB connection events
-mongoose.connection.on('error', err => {
-  logger.error('MongoDB connection error:', err);
-});
+if (!shouldSkipDb) {
+  // Handle MongoDB connection events
+  mongoose.connection.on('error', err => {
+    logger.error('MongoDB connection error:', err);
+  });
 
-mongoose.connection.on('disconnected', () => {
-  logger.warn('MongoDB disconnected');
-});
+  mongoose.connection.on('disconnected', () => {
+    logger.warn('MongoDB disconnected');
+  });
 
-// Connect to the database
-connectDB();
+  // Connect to the database
+  connectDB();
+}
 
 // Define MongoDB Schema and Model
 const drawingSchema = new mongoose.Schema({
@@ -249,9 +259,11 @@ async function loadInitialData() {
 }
 
 // Call the function to load initial data
-loadInitialData().catch(err => {
-  logger.error('Failed to load initial data:', err);
-});
+if (!shouldSkipDb) {
+  loadInitialData().catch(err => {
+    logger.error('Failed to load initial data:', err);
+  });
+}
 
 // Socket.IO connection handling with error handling and validation
 io.on('connection', async (socket) => {
@@ -263,25 +275,45 @@ io.on('connection', async (socket) => {
 
   try {
     // Load user data from database or create new user
-    let user = await User.findOne({ id: socket.id });
-    
-    if (!user) {
-      // Generate random color for new user
-      const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEEAD', '#D4A5A5'];
-      const color = colors[Math.floor(Math.random() * colors.length)];
-      
-      user = new User({
-        id: socket.id,
-        name: `User${Math.floor(1000 + Math.random() * 9000)}`,
-        color: color,
-        lastActive: new Date()
-      });
-      
-      await user.save();
+    let user;
+    if (shouldSkipDb) {
+      user = users.find(existingUser => existingUser.id === socket.id);
+
+      if (!user) {
+        // Generate random color for new user
+        const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEEAD', '#D4A5A5'];
+        const color = colors[Math.floor(Math.random() * colors.length)];
+
+        user = {
+          id: socket.id,
+          name: `User${Math.floor(1000 + Math.random() * 9000)}`,
+          color: color,
+          lastActive: new Date()
+        };
+      } else {
+        user.lastActive = new Date();
+      }
     } else {
-      // Update last active time
-      user.lastActive = new Date();
-      await user.save();
+      user = await User.findOne({ id: socket.id });
+
+      if (!user) {
+        // Generate random color for new user
+        const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEEAD', '#D4A5A5'];
+        const color = colors[Math.floor(Math.random() * colors.length)];
+
+        user = new User({
+          id: socket.id,
+          name: `User${Math.floor(1000 + Math.random() * 9000)}`,
+          color: color,
+          lastActive: new Date()
+        });
+
+        await user.save();
+      } else {
+        // Update last active time
+        user.lastActive = new Date();
+        await user.save();
+      }
     }
     
     // Add user to active users list if not already present
@@ -308,7 +340,7 @@ io.on('connection', async (socket) => {
     logger.info(`User connected: ${user.name} (${socket.id})`);
     
     // Handle drawing events with validation
-    socket.on('draw', async (data) => {
+    const handleDrawing = async (data) => {
       try {
         // Validate drawing data
         if (!data || typeof data !== 'object') {
@@ -326,9 +358,11 @@ io.on('connection', async (socket) => {
         };
 
         // Save drawing to database
-        const drawing = new Drawing({ data: sanitizedData });
-        await drawing.save();
-        
+        const drawing = shouldSkipDb ? { data: sanitizedData } : new Drawing({ data: sanitizedData });
+        if (!shouldSkipDb) {
+          await drawing.save();
+        }
+
         // Add to in-memory history (keep only last 100 drawings in memory)
         drawingHistory.push(drawing);
         if (drawingHistory.length > 100) {
@@ -336,22 +370,27 @@ io.on('connection', async (socket) => {
         }
         
         // Broadcast to all clients
-        socket.broadcast.emit('draw', sanitizedData);
+        socket.broadcast.emit('drawing', sanitizedData);
       } catch (err) {
         logger.error('Error saving drawing:', { error: err.message, stack: err.stack });
       }
-    });
+    };
+
+    // Support legacy 'draw' event name alongside the current 'drawing' event until clients migrate.
+    socket.on('drawing', handleDrawing);
+    socket.on('draw', handleDrawing);
     
     // Handle chat messages with validation and sanitization
-    socket.on('chatMessage', (data) => {
+    const handleChatMessage = (data) => {
       try {
-        if (!data || typeof data !== 'object' || !data.message) {
+        const messageText = data?.message;
+        if (!data || typeof data !== 'object' || !messageText) {
           logger.warn('Invalid chat message format');
           return;
         }
 
         // Sanitize message
-        const sanitizedMessage = sanitizeInput(data.message);
+        const sanitizedMessage = sanitizeInput(messageText);
         
         if (!sanitizedMessage.trim()) {
           logger.warn('Empty message after sanitization');
@@ -360,7 +399,7 @@ io.on('connection', async (socket) => {
 
         const messageData = {
           userId: user.id,
-          userName: user.name,
+          username: user.name,
           userColor: user.color,
           message: sanitizedMessage,
           timestamp: new Date()
@@ -373,11 +412,15 @@ io.on('connection', async (socket) => {
           messageLength: sanitizedMessage.length 
         });
 
-        io.emit('chatMessage', messageData);
+        io.emit('chat message', messageData);
       } catch (err) {
         logger.error('Error processing chat message:', { error: err.message });
       }
-    });
+    };
+
+    // Support legacy 'chatMessage' event name alongside the current 'chat message' event.
+    socket.on('chat message', handleChatMessage);
+    socket.on('chatMessage', handleChatMessage);
     
     // Handle user disconnection
     socket.on('disconnect', async () => {
@@ -386,17 +429,19 @@ io.on('connection', async (socket) => {
       if (user) {
         // Remove user from active users
         users = users.filter(u => u.id !== socket.id);
-        
+
         // Update last active time in database
-        try {
-          await User.updateOne(
-            { id: user.id },
-            { $set: { lastActive: new Date() } }
-          );
-        } catch (err) {
-          logger.error('Error updating user last active time:', { error: err.message });
+        if (!shouldSkipDb) {
+          try {
+            await User.updateOne(
+              { id: user.id },
+              { $set: { lastActive: new Date() } }
+            );
+          } catch (err) {
+            logger.error('Error updating user last active time:', { error: err.message });
+          }
         }
-        
+
         // Notify other users
         socket.broadcast.emit('userLeft', { id: socket.id });
       }
@@ -413,6 +458,11 @@ const shutdown = (signal) => {
   logger.info(`Received ${signal}. Starting graceful shutdown...`);
   
   server.close(() => {
+    if (shouldSkipDb) {
+      process.exit(0);
+      return;
+    }
+
     mongoose.connection.close(false, () => {
       logger.info('MongoDB connection closed.');
       process.exit(0);

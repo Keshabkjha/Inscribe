@@ -14,7 +14,8 @@
     "lint": "eslint . --ext .js",
     "lint:fix": "eslint . --ext .js --fix",
     "format": "prettier --write \"**/*.{js,jsx,json,md}\"",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "postinstall": "node ./scripts/patch-gopd.js"
   },
   "keywords": [
     "drawing",

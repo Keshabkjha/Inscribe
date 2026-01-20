@@ -16,5 +16,13 @@
     "no-var": "error",
     "eqeqeq": ["error", "always"]
   },
+  "overrides": [
+    {
+      "files": ["__tests__/**/*.js"],
+      "env": {
+        "jest": true
+      }
+    }
+  ],
   "ignorePatterns": ["node_modules/**", "public/**"]
 }
